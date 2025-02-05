@@ -1,19 +1,20 @@
+import 'package:appflowy_backend/protobuf/flowy-error/code.pbenum.dart';
 import 'package:appflowy_backend/protobuf/flowy-error/errors.pb.dart';
 
 class AuthError {
-  static final supabaseSignInError = FlowyError()
-    ..msg = 'supabase sign in error'
-    ..code = -10001;
+  static final signInWithOauthError = FlowyError()
+    ..msg = 'sign in with oauth error -10003'
+    ..code = ErrorCode.UserUnauthorized;
 
-  static final supabaseSignUpError = FlowyError()
-    ..msg = 'supabase sign up error'
-    ..code = -10002;
+  static final emptyDeepLink = FlowyError()
+    ..msg = 'Unexpected empty DeepLink'
+    ..code = ErrorCode.UnexpectedCalendarFieldType;
 
-  static final supabaseSignInWithOauthError = FlowyError()
-    ..msg = 'supabase sign in with oauth error'
-    ..code = -10003;
+  static final deepLinkError = FlowyError()
+    ..msg = 'DeepLink error'
+    ..code = ErrorCode.Internal;
 
-  static final supabaseGetUserError = FlowyError()
-    ..msg = 'supabase sign in with oauth error'
-    ..code = -10003;
+  static final unableToGetDeepLink = FlowyError()
+    ..msg = 'Unable to get the deep link'
+    ..code = ErrorCode.Internal;
 }

@@ -1,23 +1,15 @@
-import 'package:integration_test/integration_test.dart';
+import 'dart:io';
 
-import 'switch_folder_test.dart' as switch_folder_test;
-import 'document/document_test.dart' as document_test;
-import 'document/cover_image_test.dart' as cover_image_test;
-import 'share_markdown_test.dart' as share_markdown_test;
-import 'import_files_test.dart' as import_files_test;
-import 'document/document_with_database_test.dart'
-    as document_with_database_test;
-import 'document/edit_document_test.dart' as edit_document_test;
-import 'database_cell_test.dart' as database_cell_test;
-import 'database_field_test.dart' as database_field_test;
-import 'database_share_test.dart' as database_share_test;
-import 'database_row_page_test.dart' as database_row_page_test;
-import 'database_row_test.dart' as database_row_test;
-import 'database_setting_test.dart' as database_setting_test;
-import 'database_filter_test.dart' as database_filter_test;
-import 'database_view_test.dart' as database_view_test;
-import 'database_calendar_test.dart' as database_calendar_test;
-import 'database_sort_test.dart' as database_sort_test;
+import 'desktop_runner_1.dart';
+import 'desktop_runner_2.dart';
+import 'desktop_runner_3.dart';
+import 'desktop_runner_4.dart';
+import 'desktop_runner_5.dart';
+import 'desktop_runner_6.dart';
+import 'desktop_runner_7.dart';
+import 'desktop_runner_8.dart';
+import 'desktop_runner_9.dart';
+import 'mobile_runner_1.dart';
 
 /// The main task runner for all integration tests in AppFlowy.
 ///
@@ -26,31 +18,20 @@ import 'database_sort_test.dart' as database_sort_test;
 /// If flutter/flutter#101031 is resolved, this file can be removed completely.
 /// Once removed, the integration_test.yaml must be updated to exclude this as
 /// as the test target.
-void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  switch_folder_test.main();
-  share_markdown_test.main();
-  import_files_test.main();
-
-  // Document integration tests
-  cover_image_test.main();
-  document_test.main();
-  document_with_database_test.main();
-  edit_document_test.main();
-
-  // Database integration tests
-  database_cell_test.main();
-  database_field_test.main();
-  database_share_test.main();
-  database_row_page_test.main();
-  database_row_test.main();
-  database_setting_test.main();
-  database_filter_test.main();
-  database_sort_test.main();
-  database_view_test.main();
-  database_calendar_test.main();
-
-  // board_test.main();
-  // empty_document_test.main();
-  // smart_menu_test.main();
+Future<void> main() async {
+  if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
+    await runIntegration1OnDesktop();
+    await runIntegration2OnDesktop();
+    await runIntegration3OnDesktop();
+    await runIntegration4OnDesktop();
+    await runIntegration5OnDesktop();
+    await runIntegration6OnDesktop();
+    await runIntegration7OnDesktop();
+    await runIntegration8OnDesktop();
+    await runIntegration9OnDesktop();
+  } else if (Platform.isIOS || Platform.isAndroid) {
+    await runIntegration1OnMobile();
+  } else {
+    throw Exception('Unsupported platform');
+  }
 }

@@ -1,45 +1,54 @@
 // lib/env/env.dart
+import 'package:appflowy/env/cloud_env.dart';
+import 'package:appflowy/plugins/shared/share/constants.dart';
 import 'package:envied/envied.dart';
 
 part 'env.g.dart';
 
 @Envied(path: '.env')
 abstract class Env {
-  @EnviedField(
-    obfuscate: true,
-    varName: 'SUPABASE_URL',
-    defaultValue: '',
-  )
-  static final String supabaseUrl = _Env.supabaseUrl;
-  @EnviedField(
-    obfuscate: true,
-    varName: 'SUPABASE_ANON_KEY',
-    defaultValue: '',
-  )
-  static final String supabaseAnonKey = _Env.supabaseAnonKey;
-  @EnviedField(
-    obfuscate: true,
-    varName: 'SUPABASE_KEY',
-    defaultValue: '',
-  )
-  static final String supabaseKey = _Env.supabaseKey;
-  @EnviedField(
-    obfuscate: true,
-    varName: 'SUPABASE_JWT_SECRET',
-    defaultValue: '',
-  )
-  static final String supabaseJwtSecret = _Env.supabaseJwtSecret;
+  // This flag is used to decide if users can dynamically configure cloud settings. It turns true when a .env file exists containing the APPFLOWY_CLOUD_URL variable. By default, this is set to false.
+  static bool get enableCustomCloud {
+    return Env.authenticatorType ==
+            AuthenticatorType.appflowyCloudSelfHost.value ||
+        Env.authenticatorType == AuthenticatorType.appflowyCloud.value ||
+        Env.authenticatorType == AuthenticatorType.appflowyCloudDevelop.value &&
+            _Env.afCloudUrl.isEmpty;
+  }
 
   @EnviedField(
-    obfuscate: true,
-    varName: 'SUPABASE_COLLAB_TABLE',
+    obfuscate: false,
+    varName: 'AUTHENTICATOR_TYPE',
+    defaultValue: 2,
+  )
+  static const int authenticatorType = _Env.authenticatorType;
+
+  /// AppFlowy Cloud Configuration
+  @EnviedField(
+    obfuscate: false,
+    varName: 'APPFLOWY_CLOUD_URL',
     defaultValue: '',
   )
-  static final String supabaseCollabTable = _Env.supabaseCollabTable;
+  static const String afCloudUrl = _Env.afCloudUrl;
+
+  @EnviedField(
+    obfuscate: false,
+    varName: 'INTERNAL_BUILD',
+    defaultValue: '',
+  )
+  static const String internalBuild = _Env.internalBuild;
+
+  @EnviedField(
+    obfuscate: false,
+    varName: 'SENTRY_DSN',
+    defaultValue: '',
+  )
+  static const String sentryDsn = _Env.sentryDsn;
+
+  @EnviedField(
+    obfuscate: false,
+    varName: 'BASE_WEB_DOMAIN',
+    defaultValue: ShareConstants.defaultBaseWebDomain,
+  )
+  static const String baseWebDomain = _Env.baseWebDomain;
 }
-
-bool get isSupabaseEnable =>
-    Env.supabaseUrl.isNotEmpty &&
-    Env.supabaseAnonKey.isNotEmpty &&
-    Env.supabaseKey.isNotEmpty &&
-    Env.supabaseJwtSecret.isNotEmpty;

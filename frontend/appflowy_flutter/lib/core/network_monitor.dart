@@ -1,19 +1,19 @@
 import 'dart:async';
 
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:appflowy_backend/log.dart';
 import 'package:appflowy_backend/dispatch/dispatch.dart';
-import 'package:appflowy_backend/protobuf/flowy-net/network_state.pb.dart';
+import 'package:appflowy_backend/log.dart';
+import 'package:appflowy_backend/protobuf/flowy-user/user_setting.pb.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/services.dart';
 
 class NetworkListener {
-  final Connectivity _connectivity = Connectivity();
-  late StreamSubscription<ConnectivityResult> _connectivitySubscription;
-
   NetworkListener() {
     _connectivitySubscription =
         _connectivity.onConnectivityChanged.listen(_updateConnectionStatus);
   }
+
+  final Connectivity _connectivity = Connectivity();
+  late StreamSubscription<ConnectivityResult> _connectivitySubscription;
 
   Future<void> start() async {
     late ConnectivityResult result;
@@ -21,14 +21,14 @@ class NetworkListener {
     try {
       result = await _connectivity.checkConnectivity();
     } on PlatformException catch (e) {
-      Log.error('Couldn\'t check connectivity status. $e');
+      Log.error("Couldn't check connectivity status. $e");
       return;
     }
     return _updateConnectionStatus(result);
   }
 
-  void stop() {
-    _connectivitySubscription.cancel();
+  Future<void> stop() async {
+    await _connectivitySubscription.cancel();
   }
 
   Future<void> _updateConnectionStatus(ConnectivityResult result) async {
@@ -46,16 +46,12 @@ class NetworkListener {
           return NetworkTypePB.VPN;
         case ConnectivityResult.none:
         case ConnectivityResult.other:
-          return NetworkTypePB.Unknown;
+          return NetworkTypePB.NetworkUnknown;
       }
     }();
-    Log.info("Network type: $networkType");
     final state = NetworkStatePB.create()..ty = networkType;
-    NetworkEventUpdateNetworkType(state).send().then((result) {
-      result.fold(
-        (l) {},
-        (e) => Log.error(e),
-      );
+    return UserEventUpdateNetworkState(state).send().then((result) {
+      result.fold((l) {}, (e) => Log.error(e));
     });
   }
 }

@@ -1,8 +1,8 @@
-import 'package:flowy_infra/image.dart';
+import 'package:appflowy/generated/flowy_svgs.g.dart';
 import 'package:flowy_infra_ui/style_widget/icon_button.dart';
 import 'package:flowy_infra_ui/style_widget/text.dart';
 import 'package:flowy_infra_ui/widget/spacing.dart';
-import 'package:appflowy_backend/protobuf/flowy-folder2/trash.pb.dart';
+import 'package:appflowy_backend/protobuf/flowy-folder/trash.pb.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:fixnum/fixnum.dart' as $fixnum;
@@ -10,15 +10,16 @@ import 'package:fixnum/fixnum.dart' as $fixnum;
 import 'sizes.dart';
 
 class TrashCell extends StatelessWidget {
-  final VoidCallback onRestore;
-  final VoidCallback onDelete;
-  final TrashPB object;
   const TrashCell({
+    super.key,
     required this.object,
     required this.onRestore,
     required this.onDelete,
-    Key? key,
-  }) : super(key: key);
+  });
+
+  final VoidCallback onRestore;
+  final VoidCallback onDelete;
+  final TrashPB object;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +43,7 @@ class TrashCell extends StatelessWidget {
           width: TrashSizes.actionIconWidth,
           onPressed: onRestore,
           iconPadding: const EdgeInsets.all(5),
-          icon: const FlowySvg(name: 'editor/restore'),
+          icon: const FlowySvg(FlowySvgs.restore_s),
         ),
         const HSpace(20),
         FlowyIconButton(
@@ -50,7 +51,7 @@ class TrashCell extends StatelessWidget {
           width: TrashSizes.actionIconWidth,
           onPressed: onDelete,
           iconPadding: const EdgeInsets.all(5),
-          icon: const FlowySvg(name: 'editor/delete'),
+          icon: const FlowySvg(FlowySvgs.delete_s),
         ),
       ],
     );

@@ -57,15 +57,14 @@ class Sizes {
   static double get hit => 40 * hitScale;
 
   static double get iconMed => 20;
-
-  static double get sideBarMed => 225 * hitScale;
-
-  static double get sideBarLg => 290 * hitScale;
 }
 
 class Corners {
   static const BorderRadius s3Border = BorderRadius.all(s3Radius);
   static const Radius s3Radius = Radius.circular(3);
+
+  static const BorderRadius s4Border = BorderRadius.all(s4Radius);
+  static const Radius s4Radius = Radius.circular(4);
 
   static const BorderRadius s5Border = BorderRadius.all(s5Radius);
   static const Radius s5Radius = Radius.circular(5);
@@ -81,4 +80,7 @@ class Corners {
 
   static const BorderRadius s12Border = BorderRadius.all(s12Radius);
   static const Radius s12Radius = Radius.circular(12);
+
+  static const BorderRadius s16Border = BorderRadius.all(s16Radius);
+  static const Radius s16Radius = Radius.circular(16);
 }

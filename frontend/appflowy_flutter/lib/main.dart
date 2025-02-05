@@ -1,13 +1,11 @@
-import 'package:appflowy/startup/entry_point.dart';
-import 'package:flutter/material.dart';
+import 'package:scaled_app/scaled_app.dart';
 
 import 'startup/startup.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  await FlowyRunner.run(
-    FlowyApp(),
-    integrationEnv(),
+  ScaledWidgetsFlutterBinding.ensureInitialized(
+    scaleFactor: (_) => 1.0,
   );
+
+  await runAppFlowy();
 }

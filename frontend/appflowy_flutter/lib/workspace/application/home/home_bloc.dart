@@ -1,25 +1,30 @@
 import 'package:appflowy/user/application/user_listener.dart';
-import 'package:flowy_infra/time/duration.dart';
+import 'package:appflowy/workspace/application/view/view_ext.dart';
 import 'package:appflowy_backend/log.dart';
-import 'package:appflowy_backend/protobuf/flowy-error/code.pb.dart';
-import 'package:appflowy_backend/protobuf/flowy-error/errors.pb.dart';
-import 'package:appflowy_backend/protobuf/flowy-folder2/view.pb.dart';
-import 'package:appflowy_backend/protobuf/flowy-folder2/workspace.pb.dart'
+import 'package:appflowy_backend/protobuf/flowy-folder/view.pb.dart';
+import 'package:appflowy_backend/protobuf/flowy-folder/workspace.pb.dart'
     show WorkspaceSettingPB;
-import 'package:appflowy_backend/protobuf/flowy-user/user_profile.pb.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:dartz/dartz.dart';
+
 part 'home_bloc.freezed.dart';
 
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
-  final UserWorkspaceListener _listener;
-
-  HomeBloc(
-    UserProfilePB user,
-    WorkspaceSettingPB workspaceSetting,
-  )   : _listener = UserWorkspaceListener(userProfile: user),
+  HomeBloc(WorkspaceSettingPB workspaceSetting)
+      : _workspaceListener = FolderListener(),
         super(HomeState.initial(workspaceSetting)) {
+    _dispatch(workspaceSetting);
+  }
+
+  final FolderListener _workspaceListener;
+
+  @override
+  Future<void> close() async {
+    await _workspaceListener.stop();
+    return super.close();
+  }
+
+  void _dispatch(WorkspaceSettingPB workspaceSetting) {
     on<HomeEvent>(
       (event, emit) async {
         await event.map(
@@ -30,8 +35,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
               }
             });
 
-            _listener.start(
-              onAuthChanged: (result) => _authDidChanged(result),
+            _workspaceListener.start(
               onSettingUpdated: (result) {
                 result.fold(
                   (setting) =>
@@ -45,9 +49,16 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
             emit(state.copyWith(isLoading: e.isLoading));
           },
           didReceiveWorkspaceSetting: (_DidReceiveWorkspaceSetting value) {
-            final latestView = workspaceSetting.hasLatestView()
-                ? workspaceSetting.latestView
+            // the latest view is shared across all the members of the workspace.
+
+            final latestView = value.setting.hasLatestView()
+                ? value.setting.latestView
                 : state.latestView;
+
+            if (latestView != null && latestView.isSpace) {
+              // If the latest view is a space, we don't need to open it.
+              return;
+            }
 
             emit(
               state.copyWith(
@@ -56,42 +67,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
               ),
             );
           },
-          unauthorized: (_Unauthorized value) {
-            emit(state.copyWith(unauthorized: true));
-          },
         );
       },
     );
-  }
-
-  @override
-  Future<void> close() async {
-    await _listener.stop();
-    return super.close();
-  }
-
-  void _authDidChanged(Either<Unit, FlowyError> errorOrNothing) {
-    errorOrNothing.fold((_) {}, (error) {
-      if (error.code == ErrorCode.UserUnauthorized.value) {
-        add(HomeEvent.unauthorized(error.msg));
-      }
-    });
-  }
-}
-
-enum MenuResizeType {
-  slide,
-  drag,
-}
-
-extension MenuResizeTypeExtension on MenuResizeType {
-  Duration duration() {
-    switch (this) {
-      case MenuResizeType.drag:
-        return 30.milliseconds;
-      case MenuResizeType.slide:
-        return 350.milliseconds;
-    }
   }
 }
 
@@ -102,7 +80,6 @@ class HomeEvent with _$HomeEvent {
   const factory HomeEvent.didReceiveWorkspaceSetting(
     WorkspaceSettingPB setting,
   ) = _DidReceiveWorkspaceSetting;
-  const factory HomeEvent.unauthorized(String msg) = _Unauthorized;
 }
 
 @freezed
@@ -111,13 +88,10 @@ class HomeState with _$HomeState {
     required bool isLoading,
     required WorkspaceSettingPB workspaceSetting,
     ViewPB? latestView,
-    required bool unauthorized,
   }) = _HomeState;
 
   factory HomeState.initial(WorkspaceSettingPB workspaceSetting) => HomeState(
         isLoading: false,
         workspaceSetting: workspaceSetting,
-        latestView: null,
-        unauthorized: false,
       );
 }

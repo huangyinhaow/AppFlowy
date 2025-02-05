@@ -1,7 +1,9 @@
-use bytes::Bytes;
-use flowy_error::ErrorCode;
-use serde::{Deserialize, Serialize};
 use std::fmt;
+
+use bytes::Bytes;
+use serde::{Deserialize, Serialize};
+
+use flowy_error::ErrorCode;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HttpResponse {

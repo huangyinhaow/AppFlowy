@@ -1,105 +1,54 @@
 use std::cmp::Ordering;
 use std::str::FromStr;
 
-use collab::core::any_map::AnyMapExtension;
-use collab_database::fields::{Field, TypeOptionData, TypeOptionDataBuilder};
+use collab_database::fields::checkbox_type_option::CheckboxTypeOption;
+use collab_database::fields::Field;
 use collab_database::rows::Cell;
-use serde::{Deserialize, Serialize};
-
+use collab_database::template::util::ToCellString;
 use flowy_error::FlowyResult;
 
-use crate::entities::{CheckboxFilterPB, FieldType};
+use crate::entities::{CheckboxCellDataPB, CheckboxFilterPB, FieldType};
 use crate::services::cell::{CellDataChangeset, CellDataDecoder};
 use crate::services::field::{
-  default_order, CheckboxCellData, TypeOption, TypeOptionCellData, TypeOptionCellDataCompare,
-  TypeOptionCellDataFilter, TypeOptionTransform,
+  CellDataProtobufEncoder, TypeOption, TypeOptionCellDataCompare, TypeOptionCellDataFilter,
+  TypeOptionTransform,
 };
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct CheckboxTypeOption {
-  pub is_selected: bool,
-}
+use crate::services::sort::SortCondition;
 
 impl TypeOption for CheckboxTypeOption {
-  type CellData = CheckboxCellData;
+  type CellData = CheckboxCellDataPB;
   type CellChangeset = CheckboxCellChangeset;
-  type CellProtobufType = CheckboxCellData;
+  type CellProtobufType = CheckboxCellDataPB;
   type CellFilter = CheckboxFilterPB;
 }
 
-impl TypeOptionTransform for CheckboxTypeOption {
-  fn transformable(&self) -> bool {
-    true
-  }
+impl TypeOptionTransform for CheckboxTypeOption {}
 
-  fn transform_type_option(
-    &mut self,
-    _old_type_option_field_type: FieldType,
-    _old_type_option_data: TypeOptionData,
-  ) {
-  }
-
-  fn transform_type_option_cell(
-    &self,
-    cell: &Cell,
-    transformed_field_type: &FieldType,
-    _field: &Field,
-  ) -> Option<<Self as TypeOption>::CellData> {
-    if transformed_field_type.is_text() {
-      Some(CheckboxCellData::from(cell))
-    } else {
-      None
-    }
-  }
-}
-
-impl From<TypeOptionData> for CheckboxTypeOption {
-  fn from(data: TypeOptionData) -> Self {
-    let is_selected = data.get_bool_value("is_selected").unwrap_or(false);
-    CheckboxTypeOption { is_selected }
-  }
-}
-
-impl From<CheckboxTypeOption> for TypeOptionData {
-  fn from(data: CheckboxTypeOption) -> Self {
-    TypeOptionDataBuilder::new()
-      .insert_bool_value("is_selected", data.is_selected)
-      .build()
-  }
-}
-
-impl TypeOptionCellData for CheckboxTypeOption {
+impl CellDataProtobufEncoder for CheckboxTypeOption {
   fn protobuf_encode(
     &self,
     cell_data: <Self as TypeOption>::CellData,
   ) -> <Self as TypeOption>::CellProtobufType {
     cell_data
   }
-
-  fn parse_cell(&self, cell: &Cell) -> FlowyResult<<Self as TypeOption>::CellData> {
-    Ok(CheckboxCellData::from(cell))
-  }
 }
 
 impl CellDataDecoder for CheckboxTypeOption {
-  fn decode_cell(
+  fn decode_cell_with_transform(
     &self,
     cell: &Cell,
-    decoded_field_type: &FieldType,
+    from_field_type: FieldType,
     _field: &Field,
-  ) -> FlowyResult<<Self as TypeOption>::CellData> {
-    if !decoded_field_type.is_checkbox() {
-      return Ok(Default::default());
+  ) -> Option<<Self as TypeOption>::CellData> {
+    if from_field_type.is_text() {
+      Some(CheckboxCellDataPB::from(cell))
+    } else {
+      None
     }
-    self.parse_cell(cell)
   }
 
   fn stringify_cell_data(&self, cell_data: <Self as TypeOption>::CellData) -> String {
-    cell_data.to_string()
-  }
-
-  fn stringify_cell(&self, cell: &Cell) -> String {
-    Self::CellData::from(cell).to_string()
+    cell_data.to_cell_string()
   }
 }
 
@@ -111,7 +60,7 @@ impl CellDataChangeset for CheckboxTypeOption {
     changeset: <Self as TypeOption>::CellChangeset,
     _cell: Option<Cell>,
   ) -> FlowyResult<(Cell, <Self as TypeOption>::CellData)> {
-    let checkbox_cell_data = CheckboxCellData::from_str(&changeset)?;
+    let checkbox_cell_data = CheckboxCellDataPB::from_str(&changeset)?;
     Ok((checkbox_cell_data.clone().into(), checkbox_cell_data))
   }
 }
@@ -120,12 +69,8 @@ impl TypeOptionCellDataFilter for CheckboxTypeOption {
   fn apply_filter(
     &self,
     filter: &<Self as TypeOption>::CellFilter,
-    field_type: &FieldType,
     cell_data: &<Self as TypeOption>::CellData,
   ) -> bool {
-    if !field_type.is_checkbox() {
-      return true;
-    }
     filter.is_visible(cell_data)
   }
 }
@@ -135,12 +80,32 @@ impl TypeOptionCellDataCompare for CheckboxTypeOption {
     &self,
     cell_data: &<Self as TypeOption>::CellData,
     other_cell_data: &<Self as TypeOption>::CellData,
+    sort_condition: SortCondition,
   ) -> Ordering {
-    match (cell_data.is_check(), other_cell_data.is_check()) {
-      (true, true) => Ordering::Equal,
-      (true, false) => Ordering::Greater,
-      (false, true) => Ordering::Less,
-      (false, false) => default_order(),
+    let order = cell_data.is_checked.cmp(&other_cell_data.is_checked);
+    sort_condition.evaluate_order(order)
+  }
+
+  /// Compares two cell data using a specified sort condition and accounts for uninitialized cells.
+  ///
+  /// This function checks if either `cell_data` or `other_cell_data` is checked (i.e., has the `is_check` property set).
+  /// If the right cell is checked and the left cell isn't, the function will return `Ordering::Less`. Conversely, if the
+  /// left cell is checked and the right one isn't, the function will return `Ordering::Greater`. In all other cases, it returns
+  /// `Ordering::Equal`.
+  fn apply_cmp_with_uninitialized(
+    &self,
+    cell_data: Option<&<Self as TypeOption>::CellData>,
+    other_cell_data: Option<&<Self as TypeOption>::CellData>,
+    sort_condition: SortCondition,
+  ) -> Ordering {
+    match (cell_data, other_cell_data) {
+      (None, Some(right_cell_data)) if right_cell_data.is_checked => {
+        sort_condition.evaluate_order(Ordering::Less)
+      },
+      (Some(left_cell_data), None) if left_cell_data.is_checked => {
+        sort_condition.evaluate_order(Ordering::Greater)
+      },
+      _ => Ordering::Equal,
     }
   }
 }

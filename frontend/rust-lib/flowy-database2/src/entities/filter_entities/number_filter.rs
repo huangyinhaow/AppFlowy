@@ -1,6 +1,7 @@
-use crate::services::filter::{Filter, FromFilterString};
 use flowy_derive::{ProtoBuf, ProtoBuf_Enum};
 use flowy_error::ErrorCode;
+
+use crate::services::filter::ParseFilterData;
 
 #[derive(Eq, PartialEq, ProtoBuf, Debug, Default, Clone)]
 pub struct NumberFilterPB {
@@ -11,9 +12,8 @@ pub struct NumberFilterPB {
   pub content: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ProtoBuf_Enum)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, ProtoBuf_Enum)]
 #[repr(u8)]
-#[derive(Default)]
 pub enum NumberFilterConditionPB {
   #[default]
   Equal = 0,
@@ -44,29 +44,17 @@ impl std::convert::TryFrom<u8> for NumberFilterConditionPB {
       5 => Ok(NumberFilterConditionPB::LessThanOrEqualTo),
       6 => Ok(NumberFilterConditionPB::NumberIsEmpty),
       7 => Ok(NumberFilterConditionPB::NumberIsNotEmpty),
-      _ => Err(ErrorCode::InvalidData),
+      _ => Err(ErrorCode::InvalidParams),
     }
   }
 }
 
-impl FromFilterString for NumberFilterPB {
-  fn from_filter(filter: &Filter) -> Self
-  where
-    Self: Sized,
-  {
+impl ParseFilterData for NumberFilterPB {
+  fn parse(condition: u8, content: String) -> Self {
     NumberFilterPB {
-      condition: NumberFilterConditionPB::try_from(filter.condition as u8)
+      condition: NumberFilterConditionPB::try_from(condition)
         .unwrap_or(NumberFilterConditionPB::Equal),
-      content: filter.content.clone(),
-    }
-  }
-}
-impl std::convert::From<&Filter> for NumberFilterPB {
-  fn from(filter: &Filter) -> Self {
-    NumberFilterPB {
-      condition: NumberFilterConditionPB::try_from(filter.condition as u8)
-        .unwrap_or(NumberFilterConditionPB::Equal),
-      content: filter.content.clone(),
+      content,
     }
   }
 }

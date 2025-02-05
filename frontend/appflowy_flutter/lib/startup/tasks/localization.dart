@@ -8,5 +8,9 @@ class InitLocalizationTask extends LaunchTask {
   @override
   Future<void> initialize(LaunchContext context) async {
     await EasyLocalization.ensureInitialized();
+    EasyLocalization.logger.enableBuildModes = [];
   }
+
+  @override
+  Future<void> dispose() async {}
 }

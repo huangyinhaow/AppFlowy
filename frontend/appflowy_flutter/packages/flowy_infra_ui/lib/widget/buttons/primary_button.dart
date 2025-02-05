@@ -1,21 +1,21 @@
 import 'package:flowy_infra_ui/style_widget/text.dart';
 import 'package:flutter/material.dart';
-import 'package:flowy_infra/size.dart';
+
 import 'base_styled_button.dart';
+import 'secondary_button.dart';
 
 class PrimaryTextButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
-  final bool bigMode;
+  final TextButtonMode mode;
 
   const PrimaryTextButton(this.label,
-      {Key? key, this.onPressed, this.bigMode = false})
-      : super(key: key);
+      {super.key, this.onPressed, this.mode = TextButtonMode.big});
 
   @override
   Widget build(BuildContext context) {
     return PrimaryButton(
-      bigMode: bigMode,
+      mode: mode,
       onPressed: onPressed,
       child: FlowyText.regular(
         label,
@@ -26,23 +26,28 @@ class PrimaryTextButton extends StatelessWidget {
 }
 
 class PrimaryButton extends StatelessWidget {
+  const PrimaryButton({
+    super.key,
+    required this.child,
+    this.onPressed,
+    this.mode = TextButtonMode.big,
+    this.backgroundColor,
+  });
+
   final Widget child;
   final VoidCallback? onPressed;
-  final bool bigMode;
-
-  const PrimaryButton(
-      {Key? key, required this.child, this.onPressed, this.bigMode = false})
-      : super(key: key);
+  final TextButtonMode mode;
+  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
     return BaseStyledButton(
-      minWidth: bigMode ? 100 : 80,
-      minHeight: bigMode ? 40 : 38,
-      contentPadding: EdgeInsets.zero,
-      bgColor: Theme.of(context).colorScheme.primary,
+      minWidth: mode.size.width,
+      minHeight: mode.size.height,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 6),
+      bgColor: backgroundColor ?? Theme.of(context).colorScheme.primary,
       hoverColor: Theme.of(context).colorScheme.primaryContainer,
-      borderRadius: bigMode ? Corners.s12Border : Corners.s8Border,
+      borderRadius: mode.borderRadius,
       onPressed: onPressed,
       child: child,
     );
